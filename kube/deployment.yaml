@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: ghostunnel
+  name: ghostunnel
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ghostunnel
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: ghostunnel
+    spec:
+      containers:
+      - image: teng2/netutils:0.1.1
+        name: netutils
+        resources: 
+          limits:
+            memory: "256Mi"
+            cpu: "128m"
+        args: [ "nc", "-l", "0.0.0.0", "8080" ]
+        ports:
+          - containerPort: 8080
+            name: http
+
+      - image: teng2/ghostunnel:0.1.1
+        name: ghostunnel
+        ports:
+          - containerPort: 10443
+            name: tls
+        resources: 
+          limits:
+            memory: "256Mi"
+            cpu: "128m"
+        command: ["/bin/bash"]
+        args: [ "-c", "/ghostunnel server --listen 0.0.0.0:10443 --target localhost:8080 --keystore /go/src/github.com/square/ghostunnel/test-keys/server-keystore.p12 --cacert /go/src/github.com/square/ghostunnel/test-keys/cacert.pem --allow-cn client"]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: netutils
+  name: netutils
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: netutils
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: netutils
+    spec:
+      containers:
+      - image: teng2/netutils:0.1.1
+        name: netutils
+        resources: 
+          limits:
+            memory: "256Mi"
+            cpu: "128m"
+        args: [ "nc", "-l", "0.0.0.0", "8080" ]
